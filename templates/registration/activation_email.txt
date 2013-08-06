@@ -1,0 +1,5 @@
+email content for reg email
+
+Click this:
+
+{{ activation_key }}
