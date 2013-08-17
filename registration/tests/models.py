@@ -29,6 +29,7 @@ class RegistrationModelTests(TestCase):
     def setUp(self):
         self.old_activation = getattr(settings, 'ACCOUNT_ACTIVATION_DAYS', None)
         settings.ACCOUNT_ACTIVATION_DAYS = 7
+        settings.REGISTRATION_EMAIL_SEND_HTML = False
 
     def tearDown(self):
         settings.ACCOUNT_ACTIVATION_DAYS = self.old_activation
@@ -49,7 +50,7 @@ class RegistrationModelTests(TestCase):
         self.assertEqual(unicode(profile),
                          "Registration information for alice")
 
-    def test_activation_email(self):
+    def test_activation_email_no_html(self):
         """
         ``RegistrationProfile.send_activation_email`` sends an
         email.
@@ -60,6 +61,22 @@ class RegistrationModelTests(TestCase):
         profile.send_activation_email(Site.objects.get_current())
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to, [self.user_info['email']])
+        self.assertEquals(mail.outbox[0].alternatives, [])
+
+    def test_activation_email_html(self):
+        """
+        ``RegistrationProfile.send_activation_email`` sends an
+        email.
+
+        """
+        settings.REGISTRATION_EMAIL_SEND_HTML = True
+        new_user = User.objects.create_user(**self.user_info)
+        profile = RegistrationProfile.objects.create_profile(new_user)
+        profile.send_activation_email(Site.objects.get_current())
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, [self.user_info['email']])
+        #self.fail(dir(mail.outbox[0]))
+        self.assertEquals(len(mail.outbox[0].alternatives), 1)
 
     def test_user_creation(self):
         """

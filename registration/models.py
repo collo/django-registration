@@ -8,6 +8,7 @@ from django.db import models
 from django.db import transaction
 from django.template.loader import render_to_string
 from django.utils.translation import ugettext_lazy as _
+from django.core.mail import EmailMultiAlternatives, get_connection
 
 from compat import User
 
@@ -262,5 +263,15 @@ class RegistrationProfile(models.Model):
         message = render_to_string('registration/activation_email.txt',
                                    ctx_dict)
 
-        self.user.email_user(subject, message, settings.DEFAULT_FROM_EMAIL)
+        to = [self.user.email]
 
+        connection = get_connection(fail_silently=False)
+
+        mail = EmailMultiAlternatives(subject, message, settings.DEFAULT_FROM_EMAIL, to,
+            connection=connection)
+
+        if getattr(settings, 'REGISTRATION_EMAIL_SEND_HTML', False):
+            html = render_to_string('registration/activation_email.html',
+                ctx_dict)
+            mail.attach_alternative(html, 'text/html')
+        mail.send(fail_silently=False)
